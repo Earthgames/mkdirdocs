@@ -24,7 +24,6 @@ fn main() {
         }
         None => current_dir().unwrap(),
     };
-    println!("{}", directory.display());
     make_markdown_for_dir(&directory).unwrap();
 }
 
@@ -41,7 +40,11 @@ fn make_markdown_for_dir(dir: &Path) -> std::io::Result<()> {
             ));
             result.push_str(&link_markdown(dir, &file));
             make_markdown_for_dir(&contend)?;
-        } else if contend.extension().unwrap() == "md" {
+        } else if match contend.extension() {
+            Some(ex) => ex,
+            None => continue,
+        } == "md"
+        {
             result.push_str(&link_markdown(dir, &contend));
         }
     }
