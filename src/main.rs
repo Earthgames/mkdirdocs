@@ -30,14 +30,11 @@ fn main() {
 fn make_markdown_for_dir(dir: &Path) -> std::io::Result<()> {
     let dir_contend = read_dir(dir, None)?;
     let name = dir.file_name().unwrap().to_str().unwrap();
-    let mut result = format!("# {}\n", name);
+    let mut result = format!("# {}\n\n", name);
     for contend in dir_contend {
-        if contend.is_dir() {
+        if contend.is_dir() && !contend.ends_with(".git") {
             let mut file = contend.clone();
-            file.push(format!(
-                "{}.md",
-                contend.file_name().unwrap().to_str().unwrap()
-            ));
+            file.push(contend.file_name().unwrap().to_str().unwrap());
             result.push_str(&link_markdown(dir, &file));
             make_markdown_for_dir(&contend)?;
         } else if match contend.extension() {
@@ -48,6 +45,7 @@ fn make_markdown_for_dir(dir: &Path) -> std::io::Result<()> {
             result.push_str(&link_markdown(dir, &contend));
         }
     }
+
     let file_name = format!("{}.md", name);
     create_file(&dir.join(PathBuf::from(file_name)), result)
 }
@@ -55,10 +53,15 @@ fn make_markdown_for_dir(dir: &Path) -> std::io::Result<()> {
 fn link_markdown(root_dir: &Path, file: &Path) -> String {
     let dir = file.strip_prefix(root_dir).unwrap();
 
+    let parent = dir.parent().unwrap_or(&Path::new(""));
+    let file = match dir.file_stem() {
+        Some(se) => parent.join(se),
+        None => dir.to_path_buf(),
+    };
     format!(
-        " - [{}]({})\n",
-        dir.file_name().unwrap().to_str().unwrap(),
-        dir.display()
+        "- [{}](./{})\n",
+        dir.file_stem().unwrap().to_str().unwrap(),
+        file.display()
     )
 }
 
